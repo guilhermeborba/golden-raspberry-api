@@ -3,6 +3,7 @@ import { json } from 'body-parser'
 import { router } from './interfaces/routes'
 import path from 'path'
 import { CSVLoader } from './infrastructure/csv/CSVLoader'
+import { createAwardsTable } from './infrastructure/db/migrations/createAwardsTable'
 
 const app = express()
 app.use(json())
@@ -17,12 +18,11 @@ app.listen(PORT, () => {
 })
 
 async function bootstrap() {
+  createAwardsTable()
   const csvPath = path.resolve(__dirname, 'data', 'Movielist.csv')
   const awards = await CSVLoader.load(csvPath)
   console.log(`Total de registros carregados: ${awards.length}`)
   
-  // Aqui futuramente vamos popular o banco ou armazenar isso em cache
-
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`)
   })
