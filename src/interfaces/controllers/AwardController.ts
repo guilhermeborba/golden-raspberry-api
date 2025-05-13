@@ -1,8 +1,10 @@
 import { Request, Response } from 'express'
+import { GetProducerIntervalsUseCase } from '../../application/usecases/GetProducerIntervalsUseCase'
 
 export class AwardController {
   async getIntervals(req: Request, res: Response) {
-    // Vamos implementar depois com o caso de uso real
-    return res.json({ min: [], max: [] })
+    const useCase = new GetProducerIntervalsUseCase()
+    const result = useCase.execute()
+    return res.json(result)
   }
 }
