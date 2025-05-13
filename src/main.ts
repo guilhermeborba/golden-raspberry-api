@@ -26,11 +26,11 @@ async function bootstrap() {
   const repo = new ProducerAwardRepository()
   repo.insertMany(awards)
 
-  console.log(`Total de registros carregados: ${awards.length}`)
-  console.log('Dados inseridos no banco em memória.')
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`)
   })
 }
 
 bootstrap()
+
+
