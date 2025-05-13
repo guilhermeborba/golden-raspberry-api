@@ -71,7 +71,7 @@ npm test
 }
 ```
 
-## 📂 Dataset
+## Dataset
 
 The dataset is located at `src/data/movieList.csv`.
 
