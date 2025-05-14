@@ -9,7 +9,6 @@ import { ProducerAwardRepository } from './infrastructure/repositories/ProducerA
 const app = express()
 app.use(json())
 
-// Rotas da aplicação
 app.use('/api', router)
 
 const PORT = process.env.PORT || 3000
