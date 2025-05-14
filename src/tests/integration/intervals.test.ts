@@ -1,35 +1,123 @@
-import path from 'path'
-import { app } from '../../app'
 import request from 'supertest'
+import { app } from '../../app'
 import { createAwardsTable } from '../../infrastructure/db/migrations/createAwardsTable'
-import { CSVLoader } from '../../infrastructure/csv/CSVLoader'
 import { ProducerAwardRepository } from '../../infrastructure/repositories/ProducerAwardRepository'
+import { ProducerAward } from '../../domain/entities/ProducerAward'
+import db from '../../infrastructure/db/Database'
 
-beforeAll(async () => {
-  createAwardsTable()
-  const csvPath = path.resolve(__dirname, '../../data/movieList.csv')
-  const awards = await CSVLoader.load(csvPath)
-  const repo = new ProducerAwardRepository()
-  repo.insertMany(awards)
-})
+describe('GET /api/producers/intervals - custom mock data', () => {
+  beforeAll(() => {
+    createAwardsTable()
+    db.prepare('DELETE FROM producer_awards').run()
 
+    const repo = new ProducerAwardRepository()
 
-describe('GET /api/producers/intervals', () => {
-  it('should return producers with min and max win intervals', async () => {
+    const mockAwards: ProducerAward[] = [
+      {
+        year: 2000,
+        title: 'Mock Movie A',
+        studios: 'Studio A',
+        producers: ['Producer A'],
+        winner: true
+      },
+      {
+        year: 2005,
+        title: 'Mock Movie A2',
+        studios: 'Studio A',
+        producers: ['Producer A'],
+        winner: true
+      },
+      {
+        year: 1990,
+        title: 'Mock Movie B',
+        studios: 'Studio B',
+        producers: ['Producer B'],
+        winner: true
+      },
+      {
+        year: 2005,
+        title: 'Mock Movie B2',
+        studios: 'Studio B',
+        producers: ['Producer B'],
+        winner: true
+      }
+    ]
+
+    repo.insertMany(mockAwards)
+  })
+
+  it('should return expected min and max intervals', async () => {
     const res = await request(app).get('/api/producers/intervals')
 
     expect(res.status).toBe(200)
-    expect(res.body).toHaveProperty('min')
-    expect(res.body).toHaveProperty('max')
+    expect(res.body.min).toEqual([
+      {
+        producer: 'Producer A',
+        interval: 5,
+        previousWin: 2000,
+        followingWin: 2005
+      }
+    ])
+    expect(res.body.max).toEqual([
+      {
+        producer: 'Producer B',
+        interval: 15,
+        previousWin: 1990,
+        followingWin: 2005
+      }
+    ])
+  })
+})
 
-    expect(Array.isArray(res.body.min)).toBe(true)
-    expect(Array.isArray(res.body.max)).toBe(true)
+describe('GET /api/producers/intervals - all producers with same interval', () => {
+  beforeAll(() => {
+    createAwardsTable()
+    db.prepare('DELETE FROM producer_awards').run()
 
-    if (res.body.min.length > 0) {
-      expect(res.body.min[0]).toHaveProperty('producer')
-      expect(res.body.min[0]).toHaveProperty('interval')
-      expect(res.body.min[0]).toHaveProperty('previousWin')
-      expect(res.body.min[0]).toHaveProperty('followingWin')
-    }
+    const repo = new ProducerAwardRepository()
+
+    const awards: ProducerAward[] = [
+      { year: 1990, title: 'A', studios: 'S', producers: ['P1'], winner: true },
+      { year: 1995, title: 'A2', studios: 'S', producers: ['P1'], winner: true },
+      { year: 2000, title: 'B', studios: 'S', producers: ['P2'], winner: true },
+      { year: 2005, title: 'B2', studios: 'S', producers: ['P2'], winner: true },
+      { year: 2010, title: 'C', studios: 'S', producers: ['P3'], winner: true },
+      { year: 2015, title: 'C2', studios: 'S', producers: ['P3'], winner: true }
+    ]
+
+    repo.insertMany(awards)
+  })
+
+  it('should return all producers as min and max when intervals are equal', async () => {
+    const res = await request(app).get('/api/producers/intervals')
+    expect(res.status).toBe(200)
+
+    const minProducers = res.body.min.map((item: any) => item.producer)
+    const maxProducers = res.body.max.map((item: any) => item.producer)
+
+    expect(minProducers).toEqual(expect.arrayContaining(['P1', 'P2', 'P3']))
+    expect(maxProducers).toEqual(expect.arrayContaining(['P1', 'P2', 'P3']))
+  })
+})
+
+describe('GET /api/producers/intervals - single winner scenario', () => {
+  beforeAll(() => {
+    createAwardsTable()
+    db.prepare('DELETE FROM producer_awards').run()
+
+    const repo = new ProducerAwardRepository()
+
+    const awards: ProducerAward[] = [
+      { year: 2020, title: 'Lone Winner', studios: 'S', producers: ['Solo'], winner: true }
+    ]
+
+    repo.insertMany(awards)
+  })
+
+  it('should return empty min and max if only one producer has one win', async () => {
+    const res = await request(app).get('/api/producers/intervals')
+    expect(res.status).toBe(200)
+    expect(res.body.min).toEqual([])
+    expect(res.body.max).toEqual([])
   })
 })

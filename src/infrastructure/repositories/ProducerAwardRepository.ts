@@ -1,7 +1,8 @@
 import db from '../db/Database'
 import { ProducerAward } from '../../domain/entities/ProducerAward'
+import { IProducerAwardRepository } from '../../interfaces/repositories/IProducerAwardRepository'
 
-export class ProducerAwardRepository {
+export class ProducerAwardRepository implements IProducerAwardRepository {
   insertMany(awards: ProducerAward[]): void {
     const insert = db.prepare(`
       INSERT INTO producer_awards (year, title, studios, producer, winner)
@@ -23,5 +24,13 @@ export class ProducerAwardRepository {
     })
 
     insertMany(awards)
+  }
+
+  getAllWinners(): { producer: string; year: number }[] {
+    return db.prepare(`
+      SELECT producer, year FROM producer_awards
+      WHERE winner = 1
+      ORDER BY producer, year
+    `).all() as { producer: string; year: number }[]
   }
 }
