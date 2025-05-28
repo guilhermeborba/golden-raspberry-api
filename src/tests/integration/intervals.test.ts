@@ -124,6 +124,20 @@ describe('GET /api/producers/intervals - single winner scenario', () => {
   })
 })
 
+describe('GET /api/producers/intervals - no data in database', () => {
+  beforeAll(() => {
+    createAwardsTable()
+    db.prepare('DELETE FROM producer_awards').run()
+  })
+
+  it('should return empty arrays for min and max if no winners are present', async () => {
+    const res = await request(app).get('/api/producers/intervals')
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ min: [], max: [] })
+  })
+})
+
 describe('GET /api/producers/intervals - from original dataset', () => {
   beforeAll(async () => {
     createAwardsTable()
