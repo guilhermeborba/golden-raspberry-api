@@ -5,7 +5,7 @@ import { IProducerAwardRepository } from '../../interfaces/repositories/IProduce
 export class ProducerAwardRepository implements IProducerAwardRepository {
   insertMany(awards: ProducerAward[]): void {
     const insert = db.prepare(`
-      INSERT INTO producer_awards (year, title, studios, producer, winner)
+      INSERT INTO producer_awards (year, title, studios, producers, winner)
       VALUES (@year, @title, @studios, @producer, @winner)
     `)
 
@@ -27,10 +27,21 @@ export class ProducerAwardRepository implements IProducerAwardRepository {
   }
 
   getAllWinners(): { producer: string; year: number }[] {
-    return db.prepare(`
-      SELECT producer, year FROM producer_awards
-      WHERE winner = 1
-      ORDER BY producer, year
-    `).all() as { producer: string; year: number }[]
+    const rows = db.prepare('SELECT year, producers FROM producer_awards WHERE winner = 1').all() as { year: number; producers: string }[]
+
+    const exploded: { producer: string; year: number }[] = []
+
+    for (const row of rows) {
+      const producers = row.producers
+        .split(/,| and /)
+        .map((p: string) => p.trim())
+        .filter((p: string) => p.length > 0)
+
+      for (const producer of producers) {
+        exploded.push({ producer, year: row.year })
+      }
+    }
+
+    return exploded
   }
 }

@@ -7,7 +7,7 @@ export function createAwardsTable() {
       year INTEGER NOT NULL,
       title TEXT NOT NULL,
       studios TEXT NOT NULL,
-      producer TEXT NOT NULL,
+      producers TEXT NOT NULL,
       winner BOOLEAN NOT NULL
     );
   `).run()

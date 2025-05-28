@@ -4,6 +4,8 @@ import { createAwardsTable } from '../../infrastructure/db/migrations/createAwar
 import { ProducerAwardRepository } from '../../infrastructure/repositories/ProducerAwardRepository'
 import { ProducerAward } from '../../domain/entities/ProducerAward'
 import db from '../../infrastructure/db/Database'
+import path from 'path'
+import { CSVLoader } from '../../infrastructure/csv/CSVLoader'
 
 describe('GET /api/producers/intervals - custom mock data', () => {
   beforeAll(() => {
@@ -119,5 +121,42 @@ describe('GET /api/producers/intervals - single winner scenario', () => {
     expect(res.status).toBe(200)
     expect(res.body.min).toEqual([])
     expect(res.body.max).toEqual([])
+  })
+})
+
+describe('GET /api/producers/intervals - from original dataset', () => {
+  beforeAll(async () => {
+    createAwardsTable()
+    db.prepare('DELETE FROM producer_awards').run()
+
+    const csvPath = path.resolve(__dirname, '../../../src/data/Movielist.csv')
+    const awards = await CSVLoader.load(csvPath)
+
+    const repo = new ProducerAwardRepository()
+    repo.insertMany(awards)
+  })
+
+  it('should return correct min and max intervals from real CSV data', async () => {
+    const res = await request(app).get('/api/producers/intervals')
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({
+      min: [
+        {
+          producer: 'Joel Silver',
+          interval: 1,
+          previousWin: 1990,
+          followingWin: 1991
+        }
+      ],
+      max: [
+        {
+          producer: 'Matthew Vaughn',
+          interval: 13,
+          previousWin: 2002,
+          followingWin: 2015
+        }
+      ]
+    })
   })
 })
